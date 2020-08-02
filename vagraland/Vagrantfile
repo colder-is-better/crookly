@@ -1,0 +1,67 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+ENV['VAGRANT_DEFAULT_PROVIDER'] = 'libvirt'
+
+the_box = 'sles-15-sp2'
+libvirt_pool = 'default'
+
+cluster_net_prefix = '192.168.10'
+first_node_addr = 99
+
+worker_count = 3
+osd_disk_capacity = '32G'
+osd_disks_per_worker = 3
+
+ram_size = 4096
+core_count = 4
+
+Vagrant.configure(2) do |config|
+
+  # ===== General Vagrant VM configuration
+
+  config.vm.box = "#{the_box}"
+  config.vm.box_check_update = false
+  config.vm.synced_folder "./", "/vagrant", disabled: true
+  config.vm.provider :libvirt do |tmpl|
+    tmpl.cpus = core_count
+    tmpl.memory = ram_size
+    tmpl.video_vram = 2048
+    tmpl.storage_pool_name = libvirt_pool
+  end
+  config.ssh.insert_key = false
+
+  # ===== Jump host
+
+  config.vm.define :jhost do |node|
+    node.vm.hostname = "jhost"
+    node.vm.network :private_network,
+      :ip => "#{cluster_net_prefix}.#{first_node_addr}"
+  end
+
+  # ===== Master node
+
+  config.vm.define :master do |node|
+    node.vm.hostname = "master"
+    node.vm.network :private_network,
+      :ip => "#{cluster_net_prefix}.#{first_node_addr+1}"
+  end
+
+  # ===== Worker nodes
+
+  (1..worker_count).each do |m|
+    config.vm.define :"worker#{m}" do |node|
+      node.vm.hostname = "worker#{m}"
+      node.vm.network :private_network,
+        :ip => "#{cluster_net_prefix}.#{first_node_addr+1+m}"
+      (1..osd_disks_per_worker).each do |n|
+        node.vm.provider :libvirt do |thisone|
+          thisone.storage :file,
+            :path => "worker#{m}_data_disk_#{n}.img",
+            :size => "#{osd_disk_capacity}",
+            :type => "raw"
+        end
+      end
+    end
+  end
+end

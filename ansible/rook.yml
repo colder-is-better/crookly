@@ -1,0 +1,98 @@
+---
+
+- hosts: caasp_jumphost
+
+  become: true
+
+  vars_files:
+    - vars/ses.yml
+
+  roles:
+
+    # Tag add_repos may be used when we want to skip adding repositories:
+    # ansible-playbook -i inventory/caasp --skip-tags add_repos rook.yml
+
+    - { role: add_repos, tags: add_repos }
+
+    - refresh_update
+
+  tasks:
+
+    - name: 'Install latest version of product SES'
+      zypper:
+        name: ses
+        type: product
+        state: latest
+        update_cache: yes
+
+    - name: 'Install latest version of package rook-k8s-yaml'
+      zypper:
+        name: rook-k8s-yaml
+        state: latest
+        update_cache: yes
+
+    - name: 'Create common resources necessary to start the Rook operator and the Ceph cluster'
+      become_user: root
+      shell: |
+        kubectl apply -f common.yaml
+      args:
+        chdir: /usr/share/k8s-yaml/rook/ceph
+
+    - name: 'Deploy the Rook operator'
+      become_user: root
+      shell: |
+        kubectl apply -f operator.yaml
+      args:
+        chdir: /usr/share/k8s-yaml/rook/ceph
+
+    - name: 'Wait until the Rook operator has finished deploying'
+      vars:
+        pods_expected: "{{ 1 + groups['caasp_workers'] | length }}"
+      become_user: root
+      shell: |
+        kubectl get pods -n rook-ceph --no-headers | \
+        grep -w 'rook-ceph-operator\|rook-discover' | grep Running | wc -l
+      register: num_of_running_pods
+      until: num_of_running_pods.stdout == pods_expected
+      retries: 30
+      delay: 20
+
+    - name: 'Deploy the Ceph cluster'
+      become_user: root
+      shell: |
+        kubectl apply -f cluster.yaml
+      args:
+        chdir: /usr/share/k8s-yaml/rook/ceph
+
+    - name: 'Deploy the Toolbox pod'
+      become_user: root
+      shell: |
+        kubectl apply -f toolbox.yaml
+      args:
+        chdir: /usr/share/k8s-yaml/rook/ceph
+
+    - name: 'Wait until the Toolbox pod has finished deploying'
+      become_user: root
+      shell: |
+        kubectl get pods -n rook-ceph --no-headers | \
+        grep rook-ceph-tools | grep Running | wc -l
+      register: toolbox_pod
+      until: toolbox_pod.stdout == '1'
+      retries: 15
+      delay: 20
+
+    - name: 'Get the Toolbox pod full name'
+      become_user: root
+      shell: |
+        kubectl -n rook-ceph get pod \
+        -l "app=rook-ceph-tools" -o jsonpath='{.items[0].metadata.name}'
+      register: toolbox_name
+
+    - name: 'Wait until Ceph health has reached HEALTH_OK status'
+      become_user: root
+      shell: |
+        kubectl -n rook-ceph exec {{ toolbox_name.stdout }} -- ceph health
+      register: ceph_health
+      until: ceph_health.stdout == 'HEALTH_OK'
+      retries: 90
+      delay: 20

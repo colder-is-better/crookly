@@ -1,0 +1,5 @@
+127.0.0.1 localhost.localdomain localhost
+
+{% for n in the_nodes %}
+{{ hostvars[n].ansible_host }} {{ n }}.{{ domain_name }} {{ n }}
+{% endfor %}

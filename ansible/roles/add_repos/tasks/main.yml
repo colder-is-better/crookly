@@ -1,0 +1,11 @@
+---
+
+- name: 'Add repositories for {{ ansible_distribution }} {{ ansible_distribution_version }} / Modules / Products'
+  zypper_repository:
+    name: '{{ item.name }}'
+    repo: '{{ item.url }}'
+    state: present
+    auto_import_keys: yes
+    overwrite_multiple: yes
+    runrefresh: yes
+  with_items: '{{ repos }}'

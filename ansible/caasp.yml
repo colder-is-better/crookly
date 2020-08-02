@@ -1,0 +1,138 @@
+---
+
+- hosts: caasp_jumphost, caasp_cluster
+
+  become: true
+
+  vars_files:
+    - vars/caasp.yml
+
+  roles:
+    - set_hostname
+    - customize_hosts_file
+
+    # Tag add_repos may be used when we want to skip adding repositories:
+    # ansible-playbook -i inventory/caasp --skip-tags add_repos caasp.yml
+
+    - { role: add_repos, tags: add_repos }
+
+    - refresh_update
+    - reboot
+
+  tasks:
+
+    - name: 'Install latest versions of relevant SUSE products'
+      zypper:
+        name: [ SLES,
+                sle-module-basesystem,
+                sle-module-server-applications,
+                sle-module-containers,
+                caasp ]
+        type: product
+        state: latest
+        update_cache: yes
+
+    - name: 'Install latest version of package chrony'
+      zypper:
+        name: chrony
+        state: latest
+        update_cache: yes
+
+    - name: 'Service chronyd should be enabled and started'
+      service:
+        name: chronyd
+        state: started
+        enabled: yes
+
+- hosts: caasp_jumphost
+
+  become: true
+
+  tasks:
+
+    - name: 'Install latest version of pattern SUSE-CaaSP-Management'
+      zypper:
+        name: SUSE-CaaSP-Management
+        type: pattern
+        state: latest
+        update_cache: yes
+
+    - name: 'Create a 2048-bit SSH key for user root'
+      user:
+        name: root
+        generate_ssh_key: yes
+        ssh_key_bits: 2048
+        ssh_key_file: .ssh/id_rsa
+
+    - name: 'Get public SSH key of user root'
+      become_user: root
+      shell: cat .ssh/id_rsa.pub
+      register: public_ssh_key_of_root
+      args:
+        chdir: $HOME
+
+    - name: 'Save public SSH key of user root into a new fact'
+      set_fact:
+        jhost_root_ssh_key: '{{ public_ssh_key_of_root.stdout }}'
+
+- hosts: caasp_cluster
+
+  become: true
+
+  tasks:
+
+    - name: "Add public SSH key of user root@{{ hostvars['jhost']['ansible_fqdn'] }} to authorized_keys"
+      authorized_key:
+        user: root
+        state: present
+        key: "{{ hostvars['jhost']['jhost_root_ssh_key'] }}"
+
+- hosts: caasp_jumphost
+
+  become: true
+
+  tasks:
+
+    - name: 'Initialize the control plane'
+      become_user: root
+      shell: |
+        eval $(ssh-agent)
+        ssh-add $HOME/.ssh/id_rsa
+        skuba cluster init --control-plane {{ hostvars['master']['ansible_host'] }} $HOME/caasp
+      args:
+        chdir: $HOME
+        creates: $HOME/caasp/kubeadm-init.conf
+
+    - name: 'Bootstrap the Master node (may take some time)'
+      become_user: root
+      shell: |
+        eval $(ssh-agent)
+        ssh-add $HOME/.ssh/id_rsa
+        skuba node bootstrap --target {{ hostvars['master']['ansible_host'] }} {{ hostvars['master']['ansible_hostname'] }}
+      args:
+        chdir: $HOME/caasp
+        creates: $HOME/caasp/admin.conf
+
+    - name: 'Have the Worker node(s) join the cluster (may take some time)'
+      become_user: root
+      shell: |
+        eval $(ssh-agent)
+        ssh-add $HOME/.ssh/id_rsa
+        skuba node join --role worker --target {{ hostvars[item]['ansible_host'] }} {{ item }}
+      args:
+        chdir: $HOME/caasp
+        creates: $HOME/caasp/kubeadm-join.conf.d/{{ hostvars[item]['ansible_host'] }}.conf
+      with_items: "{{ groups['caasp_workers'] }}"
+
+    - name: 'Create directory ~/.kube, for user root'
+      become_user: root
+      file:
+        path: $HOME/.kube
+        state: directory
+
+    - name: 'Copy ~/caasp/admin.conf to ~/.kube/config'
+      become_user: root
+      copy:
+        src: $HOME/caasp/admin.conf
+        dest: $HOME/.kube/config
+        remote_src: yes

@@ -1,0 +1,2 @@
+domain_name: 'local.is'
+the_nodes: "{{ groups['all'] }}"

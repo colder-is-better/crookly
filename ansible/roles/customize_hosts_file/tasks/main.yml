@@ -1,0 +1,10 @@
+---
+
+- name: 'Replace existing /etc/hosts with ours (keep a backup of the original)'
+  template:
+    src: etc_hosts.j2
+    dest: /etc/hosts
+    owner: root
+    group: root
+    mode: 0644
+    backup: yes
