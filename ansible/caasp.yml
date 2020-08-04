@@ -21,7 +21,7 @@
 
   tasks:
 
-    - name: 'Install latest versions of relevant SUSE products'
+    - name: 'Make sure relevant SUSE products are installed'
       zypper:
         name: [ SLES,
                 sle-module-basesystem,
@@ -29,13 +29,13 @@
                 sle-module-containers,
                 caasp ]
         type: product
-        state: latest
+        state: present
         update_cache: yes
 
-    - name: 'Install latest version of package chrony'
+    - name: 'Make sure package chrony is installed'
       zypper:
         name: chrony
-        state: latest
+        state: present
         update_cache: yes
 
     - name: 'Service chronyd should be enabled and started'
@@ -50,11 +50,11 @@
 
   tasks:
 
-    - name: 'Install latest version of pattern SUSE-CaaSP-Management'
+    - name: 'Make sure pattern SUSE-CaaSP-Management is installed'
       zypper:
         name: SUSE-CaaSP-Management
         type: pattern
-        state: latest
+        state: present
         update_cache: yes
 
     - name: 'Create a 2048-bit SSH key for user root'
@@ -70,6 +70,7 @@
       register: public_ssh_key_of_root
       args:
         chdir: $HOME
+      changed_when: false
 
     - name: 'Save public SSH key of user root into a new fact'
       set_fact:

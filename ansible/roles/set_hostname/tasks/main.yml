@@ -1,5 +1,5 @@
 ---
 
-- name: "Set system hostname"
+- name: 'Set system hostname'
   hostname:
-    name: "{{ inventory_hostname }}"
+    name: '{{ inventory_hostname }}'

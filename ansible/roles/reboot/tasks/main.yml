@@ -1,10 +1,10 @@
 ---
 
-- name: "Check if reboot is needed"
+- name: 'Check if reboot is required'
   stat:
     path: /boot/do_purge_kernels
   register: reboot_required_file
 
-- name: "Reboot system"
+- name: 'Initiate system reboot'
   reboot:
   when: reboot_required_file.stat.exists

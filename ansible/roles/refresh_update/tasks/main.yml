@@ -1,6 +1,6 @@
 ---
 
-- name: "Refresh repositories & apply package updates"
+- name: 'Refresh repositories & apply package updates'
   zypper:
-    name: "*"
-    state: latest
+    name: '*'
+    state: dist-upgrade
