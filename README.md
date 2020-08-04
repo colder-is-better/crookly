@@ -4,14 +4,14 @@
 
 ## Table of Contents
 
-* [About](#about-the-project)
+* [About](#about)
 * [Getting Started](#getting-started)
 	* [Assumptions](#assumptions)
 	* [Prerequisites](#prerequisites)
 * [Usage](#usage)
-	* [Vagrant boxes](#vagrantboxes)
-	* [Physical hosts/Cloud servers](#physcloud)
-	* [Control from localhost](#ctrllocalhost)
+	* [Vagrant boxes](#vagrant-boxes)
+	* [Physical hosts/Cloud servers](#physical-hosts-cloud-servers)
+	* [Control from localhost](#control-from-localhost)
 
 ## About
 
