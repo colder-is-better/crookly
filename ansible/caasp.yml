@@ -114,17 +114,6 @@
         chdir: $HOME/caasp
         creates: $HOME/caasp/admin.conf
 
-    - name: 'Have the Worker node(s) join the cluster (may take some time)'
-      become_user: root
-      shell: |
-        eval $(ssh-agent)
-        ssh-add $HOME/.ssh/id_rsa
-        skuba node join --role worker --target {{ hostvars[item]['ansible_host'] }} {{ item }}
-      args:
-        chdir: $HOME/caasp
-        creates: $HOME/caasp/kubeadm-join.conf.d/{{ hostvars[item]['ansible_host'] }}.conf
-      with_items: "{{ groups['caasp_workers'] }}"
-
     - name: 'Create directory ~/.kube, for user root'
       become_user: root
       file:
@@ -137,3 +126,14 @@
         src: $HOME/caasp/admin.conf
         dest: $HOME/.kube/config
         remote_src: yes
+
+    - name: 'Have the Worker node(s) join the cluster (may take some time)'
+      become_user: root
+      shell: |
+        eval $(ssh-agent)
+        ssh-add $HOME/.ssh/id_rsa
+        skuba node join --role worker --target {{ hostvars[item]['ansible_host'] }} {{ item }}
+      args:
+        chdir: $HOME/caasp
+        creates: $HOME/caasp/kubeadm-join.conf.d/{{ hostvars[item]['ansible_host'] }}.conf
+      with_items: "{{ groups['caasp_workers'] }}"
