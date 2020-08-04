@@ -1,10 +1,19 @@
 ---
 
+- name: 'Make sure required package lsof is present'
+  zypper:
+    name: lsof
+    state: present
+
 - name: 'Check if reboot is required'
-  stat:
-    path: /boot/do_purge_kernels
-  register: reboot_required_file
+  become: true
+  shell: zypper ps
+  args:
+    warn: false
+  register: zypper_ps
+  failed_when: zypper_ps.rc not in [0, 102]
+  changed_when: false
 
 - name: 'Initiate system reboot'
   reboot:
-  when: reboot_required_file.stat.exists
+  when: zypper_ps.rc == 102
