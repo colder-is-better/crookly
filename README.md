@@ -10,12 +10,12 @@
 	* [Prerequisites](#prerequisites)
 * [Usage](#usage)
 	* [Vagrant boxes](#vagrant-boxes)
-	* [Physical hosts/Cloud servers](#physical-hosts-cloud-servers)
+	* [Physical hosts](#physical-hosts)
 	* [Control from localhost](#control-from-localhost)
 
 ## About
 
-We provide a couple of Ansible roles and playbooks for quickly deploying simple [SUSE CaaS Platform](https://www.suse.com/products/caas-platform) Kubernetes clusters. After you have your CaaSP cluster up and running, you may optionally install [SES Rook](https://www.suse.com/c/ceph-on-kubernetes-tech-preview) on top. You can try those deployments on bare metal, on cloud servers or on local VMs. For the latter, we include a sample `Vagrantfile` to use with Vagrant.
+We provide a couple of Ansible roles and playbooks for quickly deploying simple [SUSE CaaS Platform](https://www.suse.com/products/caas-platform) Kubernetes clusters. After you have your CaaSP cluster up and running, you may optionally install [SES Rook](https://www.suse.com/c/ceph-on-kubernetes-tech-preview) on top. You can try those deployments on bare metal or on VMs. For the latter, we include a sample `Vagrantfile` to use with Vagrant.
 
 ## Getting Started
 
@@ -25,7 +25,7 @@ You need a Linux or Mac OS X host with Ansible installed. Should you plan on usi
 
 * We deploy CaaSP 5.0, which is based on [SUSE Linux Enterprise Server 15.2](https://www.suse.com/c/suse-linux-enterprise-15-service-pack-2-is-generally-available).
 * Should you choose to experiment with local VMs, Vagrant boxes for SLES 15.2 are available from the [SUSE Internal Build Service](http://download.suse.de/ibs/Virtualization:/Vagrant:/SLE-15-SP2/images) (IBS).
-* All necessary repositories and modules we add to our base Vagrant box/cloud servers/physical hosts, are available from IBS.
+* All necessary repositories and modules we add to our Vagrant boxes/physical hosts, are available from IBS.
 * For Rook we use the YAML files from package `rook-k8s-yaml`, coming from the SES 7.0 repositories on IBS.
 * Per the official instructions for deploying a CaaSP cluster, we employ one virtual/physical machine as a _jump host_. On that host resides [skuba](https://github.com/SUSE/skuba), a CLI tool for managing the full lifecycle of a Kubernetes cluster. More specifically, `skuba` initializes the control plane, bootstraps the Master nodes, and allows the Worker nodes to join the cluster.
 * Our whole Kubernetes setup is intentionally simple, meaning we do not have any load balancers and we prepare one Master node only. In addition to the jump host and the Master node, we have three Worker nodes joining the cluster. Of course, you can easily have two or more than three Worker nodes joining. Theoretically you can even have only one Worker node joining the cluster, but it should be noted that at the time of writing we haven't tested such a configuration.
@@ -327,9 +327,9 @@ rook-discover-n7j5g                                 1/1     Running     0       
 rook-discover-q4ncm                                 1/1     Running     0          57m   10.244.1.114     worker1   <none>           <none>
 ```
 
-### Physical hosts/Cloud servers
+### Physical hosts
 
-Provided the Ansible hosts file in `ansible/inventory/caasp` accurately reflects your physical hosts/cloud servers (see [Usage](#usage)), you can simply change into the `ansible` directory and deploy CaaSP like this:
+Provided the Ansible hosts file in `ansible/inventory/caasp` accurately reflects your physical hosts (see [Usage](#usage)), you can simply change into the `ansible` directory and deploy CaaSP like this:
 
 ```
 ~/crookly/ansible> ansible-playbook -i inventory/caasp caasp.yml
