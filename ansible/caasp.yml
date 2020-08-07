@@ -8,6 +8,7 @@
     - vars/caasp.yml
 
   roles:
+    - disable_swap
     - set_hostname
     - customize_hosts_file
 
