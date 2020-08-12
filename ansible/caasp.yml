@@ -138,3 +138,16 @@
         chdir: $HOME/caasp
         creates: $HOME/caasp/kubeadm-join.conf.d/{{ hostvars[item]['ansible_host'] }}.conf
       with_items: "{{ groups['caasp_workers'] }}"
+
+    - name: 'Wait until all nodes are ready'
+      vars:
+        nodes_expected: "{{ 1 + groups['caasp_workers'] | length }}"
+      become_user: root
+      shell: |
+        set -o pipefail && \
+        kubectl get nodes --no-headers | grep Ready | wc -l
+      register: num_of_ready_nodes
+      until: num_of_ready_nodes.stdout == nodes_expected
+      retries: 30
+      delay: 20
+      changed_when: false
