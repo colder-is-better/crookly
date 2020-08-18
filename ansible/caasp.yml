@@ -126,6 +126,7 @@
       copy:
         src: $HOME/caasp/admin.conf
         dest: $HOME/.kube/config
+        mode: '0600'
         remote_src: yes
 
     - name: 'Have the Worker node(s) join the cluster (may take some time)'
