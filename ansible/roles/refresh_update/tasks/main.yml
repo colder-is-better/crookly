@@ -4,3 +4,4 @@
   zypper:
     name: '*'
     state: dist-upgrade
+    update_cache: yes
