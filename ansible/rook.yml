@@ -106,3 +106,10 @@
       retries: 90
       delay: 20
       changed_when: false
+
+    - name: 'Add new label to worker nodes'
+      become_user: root
+      shell: |
+        kubectl label node '{{ item }}' node-role.rook-ceph/cluster=any --overwrite=true
+      loop: "{{ groups['caasp_workers'] }}"
+      changed_when: false
