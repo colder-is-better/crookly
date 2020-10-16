@@ -57,9 +57,9 @@ Vagrant.configure(2) do |config|
       (1..osd_disks_per_worker).each do |n|
         node.vm.provider :libvirt do |thisone|
           thisone.storage :file,
-            :path => "worker#{m}_data_disk_#{n}.img",
+            :path => "worker#{m}_data_disk_#{n}.qcow2",
             :size => "#{osd_disk_capacity}",
-            :type => "raw"
+            :type => "qcow2"
         end
       end
     end
